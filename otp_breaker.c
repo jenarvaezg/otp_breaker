@@ -103,7 +103,7 @@ get_lines(char *file){
 		case -1:
 			err(1, "error fork");
 		case 0:
-			
+
 			close(fd[0]);
 			dup2(fd[1], 1);
 			execvp("wc", argv);
@@ -133,7 +133,7 @@ int **
 get_messages(char *filename, int lines){
 	int i, j;
 	int **messages = malloc(sizeof(int *) * lines);
-	char *msg_hex = malloc(sizeof(char) * (MESSAGE_LENGTH * 2 + 2)); 
+	char *msg_hex = malloc(sizeof(char) * (MESSAGE_LENGTH * 2 + 2));
 	FILE *fp = fopen(filename, "r");
 	if (fp == NULL)
 		err(1, "fopen");
@@ -157,7 +157,7 @@ get_xors(int **arrs, int lines){
 	int i, j, k;
 	int n = 0;
 	int **result = malloc(sizeof(int *) * lines * lines);
-	/*we could have less arrays but since we will need 
+	/*we could have less arrays but since we will need
 	  our array to look like this later*/
 	for(i = 0; i < lines ; i++)
 		for(j = 0 ; j < lines; j++){
@@ -180,11 +180,12 @@ get_key(char *keyfile){
 			err(1, "error fopen");
 		for(i = 0; i < MESSAGE_LENGTH; i++)
 			key[i] = -1;
+        return;
 	}
 	fgets(key_hex, MESSAGE_LENGTH * 2 + 2, fp);
 	for(i = 0; i < MESSAGE_LENGTH*2; i+=2)
 		key[i/2] = hex_to_ascii(key_hex[i], key_hex[i+1]);
-	
+
 }
 
 void
@@ -241,7 +242,7 @@ get_most_likely_space(int lines, int pos, int **xored_messages){
 	}
 	j = 0;
 	for(i = 0; i < lines; i++){
-		if(max == times[i]){			
+		if(max == times[i]){
 			if(j == 0)
 				printf("Character at line %d is the most likely to be a space ", i);
 			else
@@ -287,14 +288,14 @@ int main(){
 		print_status(messages, lines);
 		pos = get_position(buf);
 		get_most_likely_space(lines, pos, xored_messages);
-		printf("Do you want to guess a character in position %d? (y/n)", pos); 
+		printf("Do you want to guess a character in position %d? (y/n)", pos);
 		get_first_word(buf);
-		if(strcmp(buf, "y") != 0 || strcmp(buf, "yes") != 0)
+		if(strcmp(buf, "y") != 0 && strcmp(buf, "yes") != 0)
 			continue;
 		line = get_line(buf);
-		ch = get_char_guess(buf);		
+		ch = get_char_guess(buf);
 		key[pos] = messages[line][pos] ^ ch;
 		fprintf(stderr, "set key at pos %d to be %d (0x%02X)\n", pos, key[pos], key[pos]);
-	}	
-	exit(EXIT_SUCCESS);	
+	}
+	exit(EXIT_SUCCESS);
 }
