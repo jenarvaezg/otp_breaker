@@ -146,11 +146,6 @@ get_messages(char *filename, int lines){
 	return messages;
 }
 
-int
-is_acceptable_value(int val){
-	return (val >= 32 && val <= 33) || (val >= 44 && val <= 46)
-		|| (val >= 63 && val <= 90) || (val >= 97 && val <= 122);
-}
 
 int **
 get_xors(int **arrs, int lines){
@@ -214,36 +209,39 @@ get_position(char *buf){
 	return (int) strtol(buf, NULL, 10);
 }
 
-int
+nt
 get_most_likely_space(int lines, int pos, int **xored_messages){
 	int i, j, max;
 	int times[lines];
+	int most_likely;
 	j = 0;
-	for(i = 0; i < lines; i++)
+	for (i = 0; i < lines; i++)
 		times[i] = 0;
-	for(i = 0; i < lines * lines; i++){
-		if(i != 0 && i % lines == 0)
+	for (i = 0; i < lines * lines; i++){
+		if (i != 0 && i % lines == 0)
 			j++;
 		/*letter xor letter < 64
-		  letter xor space > 64
-		  space xor space < 64 but
-		  is less likely*/
-		if(xored_messages[i][pos] > 64)
+		letter xor space > 64
+		space xor space < 64 but
+		is less likely*/
+		if (xored_messages[i][pos] > 64){
 			times[j]++;
+		}
 	}
 	max = times[0];
-	for(i = 1; i < lines; i++){
-		if(times[i] > max)
+	for (i = 1; i < lines; i++){
+		if (times[i] > max)
 			max = times[i];
 	}
-	if(max == 0){
+	if (max == 0){
 		printf("Either all the characters are spaces or none is!\n");
-		return 0;
+		return -1;
 	}
 	j = 0;
-	for(i = 0; i < lines; i++){
-		if(max == times[i]){
-			if(j == 0)
+	for (i = 0; i < lines; i++){
+		if (max == times[i]){
+			most_likely = i;
+			if (j == 0)
 				printf("Character at line %d is the most likely to be a space ", i);
 			else
 				printf("and %d too ", i);
@@ -251,21 +249,21 @@ get_most_likely_space(int lines, int pos, int **xored_messages){
 		}
 	}
 	printf("\n");
-	return 0;
+	return most_likely;
 }
 
 int
 get_line(char *buf){
 	printf("In which line do you want to guess? ");
 	get_first_word(buf);
-	return (int) strtol(buf, NULL, 10);
+	return (int)strtol(buf, NULL, 10);
 }
 
 char
 get_char_guess(char *buf){
 	printf("Which character do you want to guess? (If you want to guess space write space) ");
 	get_first_word(buf);
-	if(strcmp(buf, "space") == 0)
+	if (strcmp(buf, "space") == 0)
 		return ' ';
 	return buf[0];
 }
@@ -275,22 +273,32 @@ int main(){
 	char buf[1024];
 	char ch;
 	if (signal(SIGINT, catch_function) == SIG_ERR) {
-        err(1, "An error occurred while setting a signal handler\n");
-    }
+		err(1, "An error occurred while setting a signal handler\n");
+	}
 
 	int lines = get_lines(MESSAGES_FILE);
 	int **messages = get_messages(MESSAGES_FILE, lines);
 	int **xored_messages = get_xors(messages, lines);
 	get_key(KEY_FILE);
 
+	int space = 0;;
+	printf("Running first guesses\n");
+	for (pos = 0; pos < MESSAGE_LENGTH; pos++){
+		space = get_most_likely_space(lines, pos, xored_messages);
+		if (space < 0)
+			continue;
+		key[pos] = messages[space][pos] ^ ' ';
+	}
+	printf("DONE!\n");
 	printf("press ctrl + C anytime to exit and save progress!\n");
-	while(1){
+	while (1){
 		print_status(messages, lines);
 		pos = get_position(buf);
 		get_most_likely_space(lines, pos, xored_messages);
 		printf("Do you want to guess a character in position %d? (y/n)", pos);
 		get_first_word(buf);
-		if(strcmp(buf, "y") != 0 && strcmp(buf, "yes") != 0)
+		fprintf(stderr, "got %s\n", buf);
+		if (strcmp(buf, "y") != 0 && strcmp(buf, "yes") != 0)
 			continue;
 		line = get_line(buf);
 		ch = get_char_guess(buf);
